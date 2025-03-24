@@ -230,14 +230,6 @@ typedef struct countOf_t
 extern struct countOf_t countOf;
 #endif
 
-#if defined(DCCNOW)
-#include <esp_now.h>
-#include <esp_mac.h>
-#define ESPNOW_WIFI_CHANNEL 6
-#include <WiFi.h>
-const uint8_t baseStationAddress[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-#endif
-
 class NmraDcc
 {
 private:
@@ -256,9 +248,7 @@ public:
 // Flag Bits that are cloned from CV29 relating the DCC Accessory Decoder
 #define FLAGS_CV29_BITS		(FLAGS_OUTPUT_ADDRESS_MODE | FLAGS_DCC_ACCESSORY_DECODER)
 
-    void OnDataRecv(const uint8_t * macAddr, const uint8_t *incomingData, int len);
-    void ESPNOW_init();
-    
+
     /*+
      *  pin() is called from setup() and sets up the pin used to receive DCC packets.
      *
