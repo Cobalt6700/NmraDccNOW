@@ -45,11 +45,6 @@
 //			  and build DCC Mobile and Stationary Decoders
 //
 //------------------------------------------------------------------------
-#define ARDUINO 200
-#define ARDUINO_ARCH_ESP32
-#define ESP32
-#define DCCNOW
-#define DEBUG_PRINT_DCCNOW
 
 #include "NmraDcc.h"
 #ifdef ARDUINO_SAMD_ZERO
@@ -206,17 +201,17 @@
         #define CLR_TP4  GPOC = (1 << D8);
     #elif defined(ESP32)
         #define MODE_TP1 pinMode( 33,OUTPUT ) ; // GPIO 33
-        #define SET_TP1  GPOS = (1 << 33); //digitalWrite(33, HIGH);
-        #define CLR_TP1  GPOC = (1 << 33); //digitalWrite(33, LOW);
+        #define SET_TP1  GPOS = (1 << 33);
+        #define CLR_TP1  GPOC = (1 << 33);
         #define MODE_TP2 pinMode( 25,OUTPUT ) ; // GPIO 25
-        #define SET_TP2  GPOS = (1 << 25); //digitalWrite(25, HIGH);
-        #define CLR_TP2  GPOC = (1 << 25); //digitalWrite(25, LOW);
+        #define SET_TP2  GPOS = (1 << 25);
+        #define CLR_TP2  GPOC = (1 << 25);
         #define MODE_TP3 pinMode( 26,OUTPUT ) ; // GPIO 26
-        #define SET_TP3  GPOS = (1 << 26); //digitalWrite(26, HIGH);
-        #define CLR_TP3  GPOC = (1 << 26); //digitalWrite(26, LOW);
+        #define SET_TP3  GPOS = (1 << 26);
+        #define CLR_TP3  GPOC = (1 << 26);
         #define MODE_TP4 pinMode( 27,OUTPUT ) ; // GPIO 27
-        #define SET_TP4  GPOS = (1 << 27); //digitalWrite(27, HIGH);
-        #define CLR_TP4  GPOC = (1 << 27); //digitalWrite(27, LOW);
+        #define SET_TP4  GPOS = (1 << 27);
+        #define CLR_TP4  GPOC = (1 << 27);
 
 
         //#elif defined(__AVR_ATmega128__) ||defined(__AVR_ATmega1281__)||defined(__AVR_ATmega2561__)
@@ -253,14 +248,6 @@
 #ifdef DEBUG_PRINT
     #define DB_PRINT( x, ... ) { char dbgbuf[80]; sprintf_P( dbgbuf, (const char*) F( x ) , ##__VA_ARGS__ ) ; Serial.println( dbgbuf ); }
     #define DB_PRINT_( x, ... ) { char dbgbuf[80]; sprintf_P( dbgbuf, (const char*) F( x ) , ##__VA_ARGS__ ) ; Serial.print( dbgbuf ); }
-#else
-    #define DB_PRINT( x, ... ) ;
-    #define DB_PRINT_( x, ... ) ;
-#endif
-
-#ifdef DEBUG_PRINT_DCCNOW
-    #define DB_PRINT_DN( x, ... ) { char dbgbuf[80]; sprintf_P( dbgbuf, (const char*) F( x ) , ##__VA_ARGS__ ) ; Serial.println( dbgbuf ); }
-    #define DB_PRINT_DN_( x, ... ) { char dbgbuf[80]; sprintf_P( dbgbuf, (const char*) F( x ) , ##__VA_ARGS__ ) ; Serial.print( dbgbuf ); }
 #else
     #define DB_PRINT( x, ... ) ;
     #define DB_PRINT_( x, ... ) ;
@@ -326,13 +313,6 @@ struct DccRx_t
 }
 DccRx ;
 
-// typedef struct
-// {
-//     uint8_t Size ;
-//     uint8_t PreambleBits ;
-//     uint8_t Data[MAX_DCC_MESSAGE_LEN] ;
-// } DCC_MSG ;
-
 typedef struct
 {
     uint8_t   Flags ;
@@ -358,141 +338,6 @@ typedef struct
 DCC_PROCESSOR_STATE ;
 
 DCC_PROCESSOR_STATE DccProcState ;
-
-#if defined(DCCNOW)
-
-bool ShowESPErrorCode(esp_err_t errorcode){
-  
-  if (errorcode == ESP_OK) {
-    // Pair success
-    DB_PRINT_DN("Success");   
-    return true;
-  }
-  else if (errorcode == ESP_ERR_ESPNOW_NOT_INIT) {
-    // How did we get so far!!
-    DB_PRINT_DN("ESPNOW Not Init");
-    return false;
-  }
-  else if (errorcode == ESP_ERR_ESPNOW_ARG) {
-    DB_PRINT_DN("Invalid Argument");
-    return false;
-  }
-  else if (errorcode == ESP_ERR_ESPNOW_FULL) {
-    DB_PRINT_DN("Peer list full");
-    return false;
-  }
-  else if (errorcode == ESP_ERR_ESPNOW_NO_MEM) {
-    DB_PRINT_DN("Out of memory");
-    return false;
-  }
-  else if (errorcode == ESP_ERR_ESPNOW_EXIST) {
-    DB_PRINT_DN("Peer Exists");
-    return true;
-  }
-  else if (errorcode == ESP_ERR_ESPNOW_NOT_FOUND) {
-    DB_PRINT_DN("Peer not found.");
-    return false;
-  }
-  else if (errorcode == ESP_ERR_ESPNOW_INTERNAL) {
-    DB_PRINT_DN("Internal error");
-    return false;
-  }
-  else if (errorcode == ESP_ERR_ESPNOW_IF) {
-    DB_PRINT_DN("Interface error");
-    return false;
-  }
-  else if (errorcode == ESP_NOW_SEND_FAIL) {
-    DB_PRINT_DN("Send ESPNOW data fail");
-    return false;
-  }  
-  else {
-    DB_PRINT_DN("Not sure what happened");
-    return false;
-  }
-}
-
-// Formats MAC Address
-void formatMacAddress(const uint8_t *macAddr, char *buffer, int maxLength){
-  snprintf(buffer, maxLength, "%02x:%02x:%02x:%02x:%02x:%02x", macAddr[0], macAddr[1], macAddr[2], macAddr[3], macAddr[4], macAddr[5]);
-}
-
-void readMacAddress(){
-  uint8_t baseMac[6];  
-  esp_err_t ret = esp_read_mac(baseMac, ESP_MAC_WIFI_STA);
-  if (ret == ESP_OK) {
-    char thisESPMac[6];
-    formatMacAddress(baseMac, thisESPMac, 18);
-    DB_PRINT_DN(thisESPMac);
-    // Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
-    //               baseMac[0], baseMac[1], baseMac[2],
-    //               baseMac[3], baseMac[4], baseMac[5]);
-  } else {
-    DB_PRINT_DN("Failed to read MAC address");
-  }
-}
-
-
-void ESPNOW_init(){  
-    // Set device as a Wi-Fi Station
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect(); 
-    // Init ESP-NOW
-    if (esp_now_init() == ESP_OK) {
-    DB_PRINT_DN("ESPNow Init Success");    
-    } 
-    else{ 
-    DB_PRINT_DN("ESPNow Init Failed");   
-    delay(1000);
-    DB_PRINT_DN("Restarting");
-    ESP.restart(); //there was an error try again through restarting the board
-    }
-
-    DB_PRINT_DN_("MAC Address: ");
-    //String macAddr = WiFi.macAddress();
-    #if defined(DEBUG_PRINT_DCCNOW)
-        readMacAddress();
-    #endif
-    // Register for a callback function that will be called when data is received
-    esp_now_register_recv_cb(OnDataRecv);
-}
-
-// Callback function executed when data is received
-void OnDataRecv(const uint8_t * macAddr, const uint8_t *incomingData, int len) {
-
-    DccRx.PacketBuf.Size = len;
-    memcpy(&DccRx.PacketBuf.Data, incomingData, len);
-
-    DB_PRINT_DN("DCC Packet Received");
-    for (int i = 0; i < DccRx.PacketBuf.Size; i++) {
-        if (i == DccRx.PacketBuf.Size - 1) {
-            DB_PRINT_DN(" %d", DccRx.PacketBuf.Data[i]);
-        }
-        else{
-            DB_PRINT_DN_(" %d :", DccRx.PacketBuf.Data[i]);
-        }
-    }
-
-    if (DccRx.PacketBuf.Size == MAX_DCC_MESSAGE_LEN){
-        DB_PRINT_DN("DCC Packet too long");
-        return;        
-    }
-
-    for(int i = 0; i < DccRx.PacketBuf.Size; i++){
-        DccRx.chkSum ^= DccRx.PacketBuf.Data[i];
-    }
-
-    if (DccRx.chkSum == 0){
-        DB_PRINT_DN("DCC Packet okay");
-        DccRx.PacketCopy = DccRx.PacketBuf ;
-        DccRx.DataReady += 1 ;
-    }
-    else{
-        DB_PRINT_DN("DCC Packet checksum failed");
-    } 
-}
-
-
-#else
 
 #ifdef ESP32
     portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
@@ -795,16 +640,8 @@ void IRAM_ATTR ExternalInterruptHandler(void)
 
         }
         break;
-    // This is doing the work of assembling the packets. 
-    // On the first look, I need to write to the following variables:
-    // DccRx.State may need to be moved - to check. If it is only in this state machine, then it should be okay to leave. 
-    // DccRx.PacketBuf.Data - should be able to write diorectly from recieved ESPNOW data
-    // DccRx.PacketBuf.Size - should be able to get this stright from the recieved ESPNOW data
-    // DccRx.chkSum - should be able to get this stright from the recieved ESPNOW data
-    //      However - I will need to compute this as we will be outside of the ISR?
-    // DccRx.PacketBuf.PreambleBits - do I need to put data here? 
-    
-    case WAIT_DATA: 
+
+    case WAIT_DATA:
         CLR_TP2;
         DccRx.BitCount++;
         DccRx.TempByte = (DccRx.TempByte << 1) ;
@@ -828,10 +665,6 @@ void IRAM_ATTR ExternalInterruptHandler(void)
             }
         }
         break;
-    // This is checking the end bit and letting us know that data is ready. 
-    // On the first look, I need to write to the following variables:
-    // DccRx.PacketCopy = DccRx.PacketBuf ;
-    // DccRx.DataReady += 1 ;
 
     case WAIT_END_BIT:
         SET_TP2;
@@ -953,8 +786,6 @@ void IRAM_ATTR ExternalInterruptHandler(void)
     //CLR_TP1;
     CLR_TP3;
 }
-
-#endif
 
 void ackCV (void)
 {
@@ -1754,36 +1585,34 @@ void NmraDcc::pin (uint8_t ExtIntPinNum, uint8_t EnablePullup)
 
 void NmraDcc::pin (uint8_t ExtIntNum, uint8_t ExtIntPinNum, uint8_t EnablePullup)
 {
-    #if !defined(DCCNOW)
-        #if defined ( __STM32F1__ )
-        // with STM32F1 the interuptnumber is equal the pin number
-        DccProcState.ExtIntNum = ExtIntPinNum;
-        // because STM32F1 has a NVIC we must set interuptpriorities
-        const nvic_irq_num irqNum2nvic[] = { NVIC_EXTI0, NVIC_EXTI1, NVIC_EXTI2, NVIC_EXTI3, NVIC_EXTI4,
-                                            NVIC_EXTI_9_5, NVIC_EXTI_9_5, NVIC_EXTI_9_5, NVIC_EXTI_9_5, NVIC_EXTI_9_5,
-                                            NVIC_EXTI_15_10, NVIC_EXTI_15_10, NVIC_EXTI_15_10, NVIC_EXTI_15_10, NVIC_EXTI_15_10, NVIC_EXTI_15_10
-                                        };
-        exti_num irqNum = (exti_num) (PIN_MAP[ExtIntPinNum].gpio_bit);
+    #if defined ( __STM32F1__ )
+    // with STM32F1 the interuptnumber is equal the pin number
+    DccProcState.ExtIntNum = ExtIntPinNum;
+    // because STM32F1 has a NVIC we must set interuptpriorities
+    const nvic_irq_num irqNum2nvic[] = { NVIC_EXTI0, NVIC_EXTI1, NVIC_EXTI2, NVIC_EXTI3, NVIC_EXTI4,
+                                         NVIC_EXTI_9_5, NVIC_EXTI_9_5, NVIC_EXTI_9_5, NVIC_EXTI_9_5, NVIC_EXTI_9_5,
+                                         NVIC_EXTI_15_10, NVIC_EXTI_15_10, NVIC_EXTI_15_10, NVIC_EXTI_15_10, NVIC_EXTI_15_10, NVIC_EXTI_15_10
+                                       };
+    exti_num irqNum = (exti_num) (PIN_MAP[ExtIntPinNum].gpio_bit);
 
-    // DCC-Input IRQ must be able to interrupt other long low priority ( level15 ) IRQ's
-        nvic_irq_set_priority (irqNum2nvic[irqNum], PRIO_DCC_IRQ);
+// DCC-Input IRQ must be able to interrupt other long low priority ( level15 ) IRQ's
+    nvic_irq_set_priority (irqNum2nvic[irqNum], PRIO_DCC_IRQ);
 
-    // Systic must be able to interrupt DCC-IRQ to always get correct micros() values
-        nvic_irq_set_priority (NVIC_SYSTICK, PRIO_SYSTIC);
-        #else
-        DccProcState.ExtIntNum = ExtIntNum;
-        #endif
-        DccProcState.ExtIntPinNum = ExtIntPinNum;
-        #ifdef __AVR_MEGA__
-        // because digitalRead at AVR is slow, we will read the dcc input in the ISR
-        // by direct port access.
-        DccProcState.ExtIntPort = portInputRegister (digitalPinToPort (ExtIntPinNum));
-        DccProcState.ExtIntMask = digitalPinToBitMask (ExtIntPinNum);
-        #else
-        DccProcState.ExtIntMask = 1;
-        #endif
-        pinMode (ExtIntPinNum, EnablePullup ? INPUT_PULLUP : INPUT);
+// Systic must be able to interrupt DCC-IRQ to always get correct micros() values
+    nvic_irq_set_priority (NVIC_SYSTICK, PRIO_SYSTIC);
+    #else
+    DccProcState.ExtIntNum = ExtIntNum;
     #endif
+    DccProcState.ExtIntPinNum = ExtIntPinNum;
+    #ifdef __AVR_MEGA__
+    // because digitalRead at AVR is slow, we will read the dcc input in the ISR
+    // by direct port access.
+    DccProcState.ExtIntPort = portInputRegister (digitalPinToPort (ExtIntPinNum));
+    DccProcState.ExtIntMask = digitalPinToBitMask (ExtIntPinNum);
+    #else
+    DccProcState.ExtIntMask = 1;
+    #endif
+    pinMode (ExtIntPinNum, EnablePullup ? INPUT_PULLUP : INPUT);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1804,7 +1633,7 @@ void NmraDcc::init (uint8_t ManufacturerId, uint8_t VersionId, uint8_t Flags, ui
     MODE_TP1; // only for debugging and timing measurement
     MODE_TP2;
     MODE_TP3;
-    MODE_TP4;    
+    MODE_TP4;
     bitMax = MAX_ONEBITFULL;
     bitMin = MIN_ONEBITFULL;
 
@@ -1813,19 +1642,17 @@ void NmraDcc::init (uint8_t ManufacturerId, uint8_t VersionId, uint8_t Flags, ui
     DccProcState.myDccAddress = -1;
     DccProcState.inAccDecDCCAddrNextReceivedMode = 0;
 
-    #if !defined(DCCNOW)
-        ISREdge = RISING;
-        // level checking to detect false IRQ's fired by glitches
-        ISRLevel = DccProcState.ExtIntMask;
-        ISRChkMask = DccProcState.ExtIntMask;
+    ISREdge = RISING;
+    // level checking to detect false IRQ's fired by glitches
+    ISRLevel = DccProcState.ExtIntMask;
+    ISRChkMask = DccProcState.ExtIntMask;
 
-        #if defined(ESP32)|| defined ( ARDUINO_ARCH_RP2040)
-        ISRWatch = ISREdge;
-        attachInterrupt (DccProcState.ExtIntNum, ExternalInterruptHandler, CHANGE);
-        #else
-        attachInterrupt (DccProcState.ExtIntNum, ExternalInterruptHandler, RISING);
-        #endif    
-    #endif    
+    #if defined(ESP32)|| defined ( ARDUINO_ARCH_RP2040)
+    ISRWatch = ISREdge;
+    attachInterrupt (DccProcState.ExtIntNum, ExternalInterruptHandler, CHANGE);
+    #else
+    attachInterrupt (DccProcState.ExtIntNum, ExternalInterruptHandler, RISING);
+    #endif
 
     // Set the Bits that control Multifunction or Accessory behaviour
     // and if the Accessory decoder optionally handles Output Addressing
@@ -1843,10 +1670,6 @@ void NmraDcc::init (uint8_t ManufacturerId, uint8_t VersionId, uint8_t Flags, ui
 
     if (notifyCVResetFactoryDefault && doAutoFactoryDefault)
         notifyCVResetFactoryDefault();
-
-    #if defined(DCCNOW)
-        ESPNOW_init()
-    #endif
 }
 
 ////////////////////////////////////////////////////////////////////////
