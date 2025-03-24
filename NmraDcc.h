@@ -38,6 +38,9 @@
 //			  and build DCC MultiFunction and Stationary Decoders
 //
 //------------------------------------------------------------------------
+#define ARDUINO 200
+#define ARDUINO_ARCH_ESP32
+#define ESP32
 
 // Uncomment the following Line to Enable Service Mode CV Programming
 #define NMRA_DCC_PROCESS_SERVICEMODE
