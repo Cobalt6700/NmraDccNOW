@@ -1,3 +1,10 @@
+# Refactor for ESPNOW
+It is my intention to add the ability to read DCC packets over EPSNOW. 
+As packets will be sent in 'raw format' the use of this lib will allow the packets to be decoded. 
+The changes should allow for wireless DCC packets to be sent to Locos / Accessories which are battery powered but using DCC decoders. 
+It should mean that exisiting DIY DCC decoders using NmraDcc could use this version with very little, if any, changes to the code. 
+
+
 # NmraDcc
 NMRA Digital Command Control (DCC) Library
 
