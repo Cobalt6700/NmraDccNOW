@@ -38,9 +38,9 @@
 //			  and build DCC MultiFunction and Stationary Decoders
 //
 //------------------------------------------------------------------------
-#define ARDUINO 200
-#define ARDUINO_ARCH_ESP32
-#define ESP32
+// #define ARDUINO 200
+// #define ARDUINO_ARCH_ESP32
+// #define ESP32
 
 // Uncomment the following Line to Enable Service Mode CV Programming
 #define NMRA_DCC_PROCESS_SERVICEMODE
@@ -59,6 +59,7 @@
 
 #ifndef NMRADCC_IS_IN
 #define NMRADCC_IS_IN
+// #endif
 
 #define NMRADCC_VERSION     206     // Version 2.0.6
 
@@ -230,14 +231,18 @@ typedef struct countOf_t
 extern struct countOf_t countOf;
 #endif
 
-#if defined(DCCNOW)
+#ifdef DCCNOW
 #include <esp_now.h>
 #include <esp_mac.h>
+
+#ifndef ESPNOW_WIFI_CHANNEL
 #define ESPNOW_WIFI_CHANNEL 6
-#include <WiFi.h>
-const uint8_t baseStationAddress[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 #endif
 
+#include <WiFi.h>
+const uint8_t baseStationAddress[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+#endif
 class NmraDcc
 {
 private:
@@ -623,6 +628,7 @@ extern void    notifyDccSigOutputState (uint16_t Addr, uint8_t State) __attribut
  *    None
  */
 extern void    notifyDccMsg (DCC_MSG * Msg) __attribute__ ( (weak));
+extern void    notifyDccNowMsg (DCC_MSG * Msg) __attribute__ ( (weak));
 
 /*+
  *  notifyCVValid() Callback to determine if a given CV is valid.
