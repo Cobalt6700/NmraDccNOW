@@ -45,11 +45,11 @@
 //			  and build DCC Mobile and Stationary Decoders
 //
 //------------------------------------------------------------------------
-#define ARDUINO 200
-#define ARDUINO_ARCH_ESP32
-#define ESP32
-#define DCCNOW
-#define DEBUG_PRINT_DCCNOW
+// #define ARDUINO 200
+// #define ARDUINO_ARCH_ESP32
+// #define ESP32
+// #define DCCNOW
+// #define DEBUG_PRINT_DCCNOW
 
 #include "NmraDcc.h"
 #ifdef ARDUINO_SAMD_ZERO
@@ -250,13 +250,13 @@
     #define CLR_TP4
 
 #endif
-#ifdef DEBUG_PRINT
-    #define DB_PRINT( x, ... ) { char dbgbuf[80]; sprintf_P( dbgbuf, (const char*) F( x ) , ##__VA_ARGS__ ) ; Serial.println( dbgbuf ); }
-    #define DB_PRINT_( x, ... ) { char dbgbuf[80]; sprintf_P( dbgbuf, (const char*) F( x ) , ##__VA_ARGS__ ) ; Serial.print( dbgbuf ); }
-#else
-    #define DB_PRINT( x, ... ) ;
-    #define DB_PRINT_( x, ... ) ;
-#endif
+// #ifdef DEBUG_PRINT
+//     #define DB_PRINT( x, ... ) { char dbgbuf[80]; sprintf_P( dbgbuf, (const char*) F( x ) , ##__VA_ARGS__ ) ; Serial.println( dbgbuf ); }
+//     #define DB_PRINT_( x, ... ) { char dbgbuf[80]; sprintf_P( dbgbuf, (const char*) F( x ) , ##__VA_ARGS__ ) ; Serial.print( dbgbuf ); }
+// #else
+//     #define DB_PRINT( x, ... ) ;
+//     #define DB_PRINT_( x, ... ) ;
+// #endif
 
 #ifdef DEBUG_PRINT_DCCNOW
     #define DB_PRINT_DN( x, ... ) { char dbgbuf[80]; sprintf_P( dbgbuf, (const char*) F( x ) , ##__VA_ARGS__ ) ; Serial.println( dbgbuf ); }
@@ -1957,6 +1957,7 @@ uint8_t NmraDcc::process()
         for (byte i=Msg.Size; i< MAX_DCC_MESSAGE_LEN; i++) Msg.Data[i] = 0;
 
         if (notifyDccMsg) 	notifyDccMsg (&Msg);
+        if (notifyDccNowMsg) 	notifyDccNowMsg (&Msg);
 
         execDccProcessor (&Msg);
         return copyDataReady ;
