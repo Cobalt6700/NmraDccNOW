@@ -1038,8 +1038,73 @@ uint8_t readCV (unsigned int CV)
     return Value ;
 }
 
+uint8_t decoderLock (unsigned int CV, uint16_t Value = -1)
+{ 
+    uint8_t val = 0;
+    bool val_in = false;    
+    if ( Value > -1 ){
+        val = (uint8_t)Value;
+        val_in = true;        
+    }
+
+    uint8_t cv15Val = readCV (CV_15_LOCK);
+    uint8_t cv16Val = readCV (CV_16_LOCK);
+   
+    if ( CV == CV_15_LOCK || CV == CV_16_LOCK) {
+        if ( CV == CV_15_LOCK ){
+            if ( cv15Val == 0 ){
+                return DCC_LOCK_INIT;
+            }
+            else {
+                return DCC_LOCK_UPDATE;
+            }
+        }
+        else if ( CV == CV_16_LOCK ){
+            if ( cv16Val == 0 ){
+                return DCC_LOCK_INIT;
+            }  
+        }
+    }            
+    
+    if ( cv15Val == cv16Val ){
+        return DCC_UNLOCKED;
+    }
+    else {
+        return DCC_LOCKED; 
+    }        
+}
+
+uint8_t checkDecoderLock (unsigned int CV)
+{
+    return decoderLock(CV);
+}
+
+bool NmraDcc::checkDecoderLock ()
+{
+    if ( decoderLock(0) == DCC_UNLOCKED ){
+        return true;
+    }
+    else {
+        return false;
+    }    
+}
+
+// uint8_t setCVLock (unsigned int CV)
+// {
+//     decoderLock(CV);
+// }
+
 uint8_t writeCV (unsigned int CV, uint8_t Value)
 {
+    
+    uint8_t decoderlock = checkDecoderLock(CV);
+
+    // decoderlock == 0 DCC_LOCKED - Locked
+    // decoderlock == 1 DCC_UNLOCKED - Unlocked
+    // decoderlock == 2 DCC_LOCK_UPDATE - write to decoderlock CV
+    // decoderlock == 3 DCC_LOCK_INIT - write to decoderlock CVs init
+
+
     switch (CV)
     {
     case CV_29_CONFIG:
@@ -1048,30 +1113,103 @@ uint8_t writeCV (unsigned int CV, uint8_t Value)
         // because you cannot build a Bidi decoder with this lib.
         DccProcState.cv29Value = Value;
         DccProcState.Flags = (DccProcState.Flags & ~FLAGS_CV29_BITS) | (Value & FLAGS_CV29_BITS);
+        DccProcState.myDccAddress = -1;
+        break;
     // no break, because myDccAdress must also be reset
     case CV_ACCESSORY_DECODER_ADDRESS_LSB:	// Also same CV for CV_MULTIFUNCTION_PRIMARY_ADDRESS
     case CV_ACCESSORY_DECODER_ADDRESS_MSB:
     case CV_MULTIFUNCTION_EXTENDED_ADDRESS_MSB:
     case CV_MULTIFUNCTION_EXTENDED_ADDRESS_LSB:
+        if (decoderlock == DCC_UNLOCKED){
         DccProcState.myDccAddress = -1;	// Assume any CV Write Operation might change the Address
+        }
     }
 
     if (notifyCVWrite)
         return notifyCVWrite (CV, Value) ;
+    
+    if ( decoderlock == DCC_LOCKED ){
+        return readEEPROM (CV) ;        
+    }    
+    else if ( decoderlock == DCC_UNLOCKED ){
+        if (readEEPROM (CV) != Value)
+        {
+            writeEEPROM (CV, Value) ;
 
-    if (readEEPROM (CV) != Value)
-    {
-        writeEEPROM (CV, Value) ;
+            if (notifyCVChange)
+                notifyCVChange (CV, Value) ;
 
-        if (notifyCVChange)
-            notifyCVChange (CV, Value) ;
+            if (notifyDccCVChange && ! (DccProcState.Flags & FLAGS_SETCV_CALLED))
+                notifyDccCVChange (CV, Value);
+        }
+    }
+    else if ( decoderlock == DCC_LOCK_UPDATE ){
+        // if ( CV == CV_15_LOCK ){ 
+            if (readEEPROM (CV_15_LOCK) != Value)
+            {
+                writeEEPROM (CV_15_LOCK, Value) ;
 
-        if (notifyDccCVChange && ! (DccProcState.Flags & FLAGS_SETCV_CALLED))
-            notifyDccCVChange (CV, Value);
+                if (notifyCVChange)
+                    notifyCVChange (CV_15_LOCK, Value) ;
+
+                if (notifyDccCVChange && ! (DccProcState.Flags & FLAGS_SETCV_CALLED))
+                    notifyDccCVChange (CV_15_LOCK, Value);
+            }
+        // }
+    }
+    else if ( decoderlock == DCC_LOCK_INIT ){
+        if ( CV == CV_15_LOCK || CV == CV_16_LOCK ){ 
+
+            writeEEPROM (CV_15_LOCK, Value) ;
+            writeEEPROM (CV_16_LOCK, Value) ;
+
+            if (notifyCVChange)
+                notifyCVChange (CV_15_LOCK, Value) ;
+                notifyCVChange (CV_16_LOCK, Value) ;
+
+            if (notifyDccCVChange && ! (DccProcState.Flags & FLAGS_SETCV_CALLED))
+                notifyDccCVChange (CV_15_LOCK, Value);
+                notifyDccCVChange (CV_16_LOCK, Value);            
+        }
     }
 
     return readEEPROM (CV) ;
 }
+
+// uint8_t writeCV (unsigned int CV, uint8_t Value)
+// {
+//     switch (CV)
+//     {
+//     case CV_29_CONFIG:
+//         // copy addressmode Bit to Flags
+//         Value = Value &  ~CV29_RAILCOM_ENABLE;   // Bidi (RailCom) Bit must not be enabled,
+//         // because you cannot build a Bidi decoder with this lib.
+//         DccProcState.cv29Value = Value;
+//         DccProcState.Flags = (DccProcState.Flags & ~FLAGS_CV29_BITS) | (Value & FLAGS_CV29_BITS);
+//     // no break, because myDccAdress must also be reset
+//     case CV_ACCESSORY_DECODER_ADDRESS_LSB:	// Also same CV for CV_MULTIFUNCTION_PRIMARY_ADDRESS
+//     case CV_ACCESSORY_DECODER_ADDRESS_MSB:
+//     case CV_MULTIFUNCTION_EXTENDED_ADDRESS_MSB:
+//     case CV_MULTIFUNCTION_EXTENDED_ADDRESS_LSB:
+//         DccProcState.myDccAddress = -1;	// Assume any CV Write Operation might change the Address
+//     }
+
+//     if (notifyCVWrite)
+//         return notifyCVWrite (CV, Value) ;
+
+//     if (readEEPROM (CV) != Value)
+//     {
+//         writeEEPROM (CV, Value) ;
+
+//         if (notifyCVChange)
+//             notifyCVChange (CV, Value) ;
+
+//         if (notifyDccCVChange && ! (DccProcState.Flags & FLAGS_SETCV_CALLED))
+//             notifyDccCVChange (CV, Value);
+//     }
+
+//     return readEEPROM (CV) ;
+// }
 
 uint16_t getMyAddr (void)
 {
@@ -1872,6 +2010,18 @@ uint16_t NmraDcc::getAddr (void)
 {
     return getMyAddr();
 }
+
+// ////////////////////////////////////////////////////////////////////////
+// uint8_t NmraDcc::getCVLock (void)
+// {
+//     return lockCV(false);
+// }
+
+// ////////////////////////////////////////////////////////////////////////
+// uint8_t NmraDcc::setCVLock (void)
+// {
+//     lockCV(true);
+// }
 
 ////////////////////////////////////////////////////////////////////////
 uint8_t NmraDcc::isSetCVReady (void)

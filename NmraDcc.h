@@ -118,6 +118,9 @@ typedef struct
 #define CV_29_CONFIG                          29
 #define CV_MANUFACTURER_START                 33
 
+#define CV_15_LOCK                            15
+#define CV_16_LOCK                            16    
+
 #if defined(ESP32)
     #include <esp_spi_flash.h>
     #define MAXCV     SPI_FLASH_SEC_SIZE
@@ -172,6 +175,14 @@ typedef enum
     DCC_ADDR_SHORT,      /** Short address is used. The range is 0 to 127. */
     DCC_ADDR_LONG,       /** Long Address is used. The range is 1 to 10239 */
 } DCC_ADDR_TYPE;
+
+typedef enum
+{
+    DCC_LOCKED,      
+    DCC_UNLOCKED,
+    DCC_LOCK_UPDATE,   
+    DCC_LOCK_INIT      
+} DCC_LOCK_STATE;
 
 typedef enum
 {
@@ -430,6 +441,11 @@ public:
      *                        This is an error indication and may indicate the system
      *                        is not handling packets fast enough or some other error is occurring.
      */
+
+    //  uint8_t getCVLock (void);
+    //  void setCVLock (void);
+    bool checkDecoderLock (void);
+
 // #define DCC_DEBUG
     #ifdef DCC_DEBUG
     uint8_t getIntCount (void);
